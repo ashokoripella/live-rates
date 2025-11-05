@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Rates Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      text-align: center;
+      padding: 40px;
+    }
+    h1 {
+      color: #2b2b2b;
+    }
+    .rate-box {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      margin: 20px auto;
+      width: 300px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .label {
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+    .value {
+      font-size: 1.3em;
+      color: #007bff;
+      margin-top: 5px;
+    }
+    footer {
+      margin-top: 30px;
+      font-size: 0.8em;
+      color: gray;
+    }
+  </style>
+</head>
+<body>
+  <h1>📊 Live Market Rates</h1>
+
+  <div class="rate-box">
+    <div class="label">💶 1 Euro = </div>
+    <div id="eurinr" class="value">Loading...</div>
+  </div>
+
+  <div class="rate-box">
+    <div class="label">🪙 Gold Rate (per 10g in INR):</div>
+    <div id="gold" class="value">Loading...</div>
+  </div>
+
+  <div class="rate-box">
+    <div class="label">🥈 Silver Rate (per 1kg in INR):</div>
+    <div id="silver" class="value">Loading...</div>
+  </div>
+
+  <div class="rate-box">
+    <div class="label">📈 CGI Inc. (GIB) Share Price (USD):</div>
+    <div id="gib" class="value">Loading...</div>
+  </div>
+
+  <footer>Updated live using public APIs</footer>
+
+  <script>
+    async function getRates() {
+      try {
+        // Euro → INR
+        const fx = await fetch("https://api.exchangerate.host/latest?base=EUR&symbols=INR");
+        const fxData = await fx.json();
+        document.getElementById("eurinr").textContent =
+          fxData.rates.INR.toFixed(2) + " ₹";
+
+        // Gold and Silver (from Metals.live API)
+        const metals = await fetch("https://api.metals.live/v1/spot");
+        const metalData = await metals.json();
+        const goldUsd = metalData.find(m => m.hasOwnProperty("gold")).gold;
+        const silverUsd = metalData.find(m => m.hasOwnProperty("silver")).silver;
+
+        // Convert to INR
+        const inrRate = fxData.rates.INR;
+        const goldInr = goldUsd * inrRate * 10 / 31.1035; // per 10g
+        const silverInr = silverUsd * inrRate * 1000 / 31.1035; // per 1kg
+
+        document.getElementById("gold").textContent = "₹ " + goldInr.toFixed(2);
+        document.getElementById("silver").textContent = "₹ " + silverInr.toFixed(2);
+
+        // CGI share price
+        const stock = await fetch("https://query1.finance.yahoo.com/v7/finance/quote?symbols=GIB");
+        const stockData = await stock.json();
+        const price = stockData.quoteResponse.result[0].regularMarketPrice;
+        document.getElementById("gib").textContent = "$ " + price.toFixed(2);
+
+      } catch (err) {
+        console.error(err);
+        document.body.innerHTML += "<p style='color:red'>Error loading data</p>";
+      }
+    }
+
+    getRates();
+  </script>
+</body>
+</html>
