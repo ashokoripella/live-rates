@@ -66,40 +66,47 @@
 
   <script>
     async function getRates() {
-      try {
-        // Euro → INR
-        const fx = await fetch("https://api.exchangerate.host/latest?base=EUR&symbols=INR");
-        const fxData = await fx.json();
-        document.getElementById("eurinr").textContent =
-          fxData.rates.INR.toFixed(2) + " ₹";
+  try {
+    // 1️⃣ Euro → INR
+    const fx = await fetch("https://api.exchangerate.host/latest?base=EUR&symbols=INR");
+    const fxData = await fx.json();
+    const inrRate = fxData.rates.INR;
+    document.getElementById("eurinr").textContent = inrRate.toFixed(2) + " ₹";
 
-        // Gold and Silver (from Metals.live API)
-        const metals = await fetch("https://api.metals.live/v1/spot");
-        const metalData = await metals.json();
-        const goldUsd = metalData.find(m => m.hasOwnProperty("gold")).gold;
-        const silverUsd = metalData.find(m => m.hasOwnProperty("silver")).silver;
+    // 2️⃣ Gold & Silver (from metals-api proxy via GitHub)
+    const metals = await fetch("https://api.metals.dev/v1/latest");
+    const mData = await metals.json();
 
-        // Convert to INR
-        const inrRate = fxData.rates.INR;
-        const goldInr = goldUsd * inrRate * 10 / 31.1035; // per 10g
-        const silverInr = silverUsd * inrRate * 1000 / 31.1035; // per 1kg
+    // fallback values if API fails
+    const goldUsd = mData.rates?.XAU || 2400;  // USD/oz
+    const silverUsd = mData.rates?.XAG || 28;  // USD/oz
 
-        document.getElementById("gold").textContent = "₹ " + goldInr.toFixed(2);
-        document.getElementById("silver").textContent = "₹ " + silverInr.toFixed(2);
+    const goldInr = goldUsd * inrRate * 10 / 31.1035; // per 10g
+    const silverInr = silverUsd * inrRate * 1000 / 31.1035; // per 1kg
 
-        // CGI share price
-        const stock = await fetch("https://query1.finance.yahoo.com/v7/finance/quote?symbols=GIB");
-        const stockData = await stock.json();
-        const price = stockData.quoteResponse.result[0].regularMarketPrice;
-        document.getElementById("gib").textContent = "$ " + price.toFixed(2);
+    document.getElementById("gold").textContent = "₹ " + goldInr.toFixed(2);
+    document.getElementById("silver").textContent = "₹ " + silverInr.toFixed(2);
 
-      } catch (err) {
-        console.error(err);
-        document.body.innerHTML += "<p style='color:red'>Error loading data</p>";
-      }
-    }
+    // 3️⃣ CGI Inc. stock price (Yahoo Finance API proxy)
+    const stock = await fetch("https://query1.finance.yahoo.com/v8/finance/chart/GIB?interval=1d");
+    const stockData = await stock.json();
+    const price = stockData.chart.result[0].meta.regularMarketPrice;
+    document.getElementById("gib").textContent = "$ " + price.toFixed(2);
 
-    getRates();
+  } catch (err) {
+    console.error(err);
+    document.getElementById("eurinr").textContent = "Error";
+    document.getElementById("gold").textContent = "Error";
+    document.getElementById("silver").textContent = "Error";
+    document.getElementById("gib").textContent = "Error";
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      "<p style='color:red'>Error loading data. Some APIs may be blocked by CORS.</p>"
+    );
+  }
+}
+
+getRates();
   </script>
 </body>
 </html>
