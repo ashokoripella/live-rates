@@ -19,42 +19,66 @@
 <div class="rate">EUR→INR: <span id="eurinr">Loading...</span></div>
 
 <script>
-async function fetchRates() {
-  const apiUrl = "https://open.er-api.com/v6/latest/EUR";
-  
-  try {
-    const response = await fetch(apiUrl);
-    if (!response.ok) throw new Error("Failed live fetch");
-    
-    const data = await response.json();
-    const eurInr = data.rates?.INR;
-    if (!eurInr) throw new Error("EUR→INR not found");
+const METALS_API_KEY = "YOUR_METALS_API_KEY"; // Replace with your Metals-API key
+const CURRENCY_API_URL = "https://open.er-api.com/v6/latest/EUR"; // Free EUR rates
+const proxy = "https://api.allorigins.win/raw?url="; // CORS proxy
 
-    document.getElementById("eurinr").textContent = "₹ " + eurInr.toLocaleString();
-    
-    // Use local data for gold/silver
-    const localData = await fetch("data.json").then(r => r.json());
-    document.getElementById("gold").textContent = "₹ " + Number(localData.gold_inr_10g).toLocaleString();
-    document.getElementById("silver").textContent = "₹ " + Number(localData.silver_inr_kg).toLocaleString();
+async function fetchRates() {
+  try {
+    // Fetch gold & silver rates
+    const metalsResponse = await fetch(proxy + encodeURIComponent(`https://metals-api.com/api/latest?access_key=${METALS_API_KEY}&base=INR&symbols=XAU,XAG`));
+    if (!metalsResponse.ok) throw new Error("Failed to fetch metals API");
+    const metalsData = await metalsResponse.json();
+
+    // 10g of gold (XAU) and 1kg of silver (XAG)
+    const goldPrice = metalsData.rates?.XAU ? metalsData.rates.XAU * 10 : null;
+    const silverPrice = metalsData.rates?.XAG ? metalsData.rates.XAG * 1 : null;
+
+    document.getElementById("gold").textContent = goldPrice ? "₹ " + goldPrice.toLocaleString() : "N/A";
+    document.getElementById("silver").textContent = silverPrice ? "₹ " + silverPrice.toLocaleString() : "N/A";
+
+    // Fetch EUR→INR rate
+    const currencyResponse = await fetch(proxy + encodeURIComponent(CURRENCY_API_URL));
+    if (!currencyResponse.ok) throw new Error("Failed to fetch currency API");
+    const currencyData = await currencyResponse.json();
+    const eurInr = currencyData.rates?.INR;
+
+    document.getElementById("eurinr").textContent = eurInr ? "₹ " + eurInr.toLocaleString() : "N/A";
+
+    console.log("✅ Live rates fetched:", { goldPrice, silverPrice, eurInr });
 
   } catch (error) {
-    console.warn("Live fetch failed, using local data.json", error);
+    console.warn("⚠️ Live fetch failed, using local data.json", error);
 
     try {
-      const localData = await fetch("data.json").then(r => r.json());
-      document.getElementById("gold").textContent = "₹ " + Number(localData.gold_inr_10g).toLocaleString();
-      document.getElementById("silver").textContent = "₹ " + Number(localData.silver_inr_kg).toLocaleString();
-      document.getElementById("eurinr").textContent = "₹ " + Number(localData.eur_inr).toLocaleString();
+      const localResponse = await fetch("data.json");
+      if (!localResponse.ok) throw new Error("data.json not found");
+      const localData = await localResponse.json();
+
+      document.getElementById("gold").textContent =
+        localData.gold_inr_10g != null ? "₹ " + Number(localData.gold_inr_10g).toLocaleString() : "N/A";
+
+      document.getElementById("silver").textContent =
+        localData.silver_inr_kg != null ? "₹ " + Number(localData.silver_inr_kg).toLocaleString() : "N/A";
+
+      document.getElementById("eurinr").textContent =
+        localData.eur_inr != null ? "₹ " + Number(localData.eur_inr).toLocaleString() : "N/A";
+
     } catch (localError) {
-      console.error("Error loading local data.json", localError);
-      document.body.insertAdjacentHTML("beforeend", "<p class='error'>Error loading data.json</p>");
+      console.error("❌ Error loading local data.json", localError);
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        "<p class='error'>Error loading data.json</p>"
+      );
     }
   }
 }
 
+// Initial load
 fetchRates();
-setInterval(fetchRates, 300000); // every 5 mins
-</script>
 
+// Auto-update every 5 minutes
+setInterval(fetchRates, 300000);
+</script>
 </body>
 </html>
