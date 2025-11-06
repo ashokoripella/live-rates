@@ -16,37 +16,57 @@
 
 <div class="rate">Gold (10g): <span id="gold">Loading...</span></div>
 <div class="rate">Silver (1kg): <span id="silver">Loading...</span></div>
-<div class="rate">GIB/USD: <span id="gib">Loading...</span></div>
+<div class="rate">EUR→INR: <span id="eurinr">Loading...</span></div>
 
 <script>
-async function loadData() {
+async function fetchRates() {
+  const proxy = "https://api.allorigins.win/raw?url=";
+  const url = encodeURIComponent("https://open.er-api.com/v6/latest/EUR");
+
   try {
-    const response = await fetch("data.json");
-    if (!response.ok) throw new Error("data.json not found");
-    
+    const response = await fetch(proxy + url);
+    if (!response.ok) throw new Error("Failed to fetch live rates");
+
     const data = await response.json();
+    const eurInr = data.rates?.INR;
 
-    // Update values safely
-    document.getElementById("gold").textContent =
-      data.gold_inr_10g != null ? "₹ " + Number(data.gold_inr_10g).toLocaleString() : "N/A";
+    if (eurInr == null) throw new Error("EUR→INR not found in API");
 
-    document.getElementById("silver").textContent =
-      data.silver_inr_kg != null ? "₹ " + Number(data.silver_inr_kg).toLocaleString() : "N/A";
+    document.getElementById("eurinr").textContent = "₹ " + eurInr.toLocaleString();
+    console.log("✅ Live EUR→INR fetched:", eurInr);
 
-    document.getElementById("gib").textContent =
-      data.gib_usd != null ? "$ " + Number(data.gib_usd).toFixed(2) : "N/A";
+  } catch (error) {
+    console.warn("⚠️ Live fetch failed, using local data.json", error);
 
-  } catch (e) {
-    console.error("Error loading data.json", e);
-    document.body.insertAdjacentHTML(
-      "beforeend",
-      "<p class='error'>Error loading data.json</p>"
-    );
+    try {
+      const localResponse = await fetch("data.json");
+      if (!localResponse.ok) throw new Error("data.json not found");
+
+      const localData = await localResponse.json();
+      document.getElementById("gold").textContent =
+        localData.gold_inr_10g != null ? "₹ " + Number(localData.gold_inr_10g).toLocaleString() : "N/A";
+
+      document.getElementById("silver").textContent =
+        localData.silver_inr_kg != null ? "₹ " + Number(localData.silver_inr_kg).toLocaleString() : "N/A";
+
+      document.getElementById("eurinr").textContent =
+        localData.eur_inr != null ? "₹ " + Number(localData.eur_inr).toLocaleString() : "N/A";
+
+    } catch (localError) {
+      console.error("❌ Error loading local data.json", localError);
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        "<p class='error'>Error loading data.json</p>"
+      );
+    }
   }
 }
 
-// Call loadData on page load
-loadData();
+// Initial load
+fetchRates();
+
+// Auto-update every 5 minutes (300,000 ms)
+setInterval(fetchRates, 300000);
 </script>
 </body>
 </html>
