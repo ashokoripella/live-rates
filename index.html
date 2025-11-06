@@ -1,66 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Market Rates (GitHub-only)</title>
-  <style>
-    body {font-family:sans-serif;text-align:center;padding:40px;background:#f9fafb;}
-    .box{background:#fff;padding:20px;margin:15px auto;width:320px;
-         border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
-    .label{font-weight:bold;} .value{color:#007bff;font-size:1.3em;margin-top:6px;}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Market Rates (GitHub-only)</title>
+<style>
+ body{font-family:sans-serif;text-align:center;background:#f9fafb;padding:40px;}
+ .box{background:#fff;padding:20px;margin:15px auto;width:320px;
+      border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+ .label{font-weight:bold;} .value{color:#007bff;font-size:1.3em;margin-top:6px;}
+ footer{margin-top:25px;color:gray;font-size:0.8em;}
+</style>
 </head>
 <body>
-  <h1>📊 Market Rates</h1>
+<h1>📊 Market Rates</h1>
 
-  <div class="box">
-    <div class="label">💶 1 Euro =</div>
-    <div id="eurinr" class="value">Loading…</div>
-  </div>
+<div class="box"><div class="label">💶 1 Euro =</div><div id="eurinr" class="value">…</div></div>
+<div class="box"><div class="label">🪙 Gold (10 g INR)</div><div id="gold" class="value">…</div></div>
+<div class="box"><div class="label">🥈 Silver (1 kg INR)</div><div id="silver" class="value">…</div></div>
+<div class="box"><div class="label">📈 CGI (GIB USD)</div><div id="gib" class="value">…</div></div>
 
-  <div class="box">
-    <div class="label">🪙 Gold (per 10 g INR)</div>
-    <div id="gold" class="value">Loading…</div>
-  </div>
+<footer>Euro auto-updates · others from data.json</footer>
 
-  <div class="box">
-    <div class="label">🥈 Silver (per kg INR)</div>
-    <div id="silver" class="value">Loading…</div>
-  </div>
+<script>
+async function loadData(){
+  try{
+    // live Euro→INR (open-CORS API)
+    const fx=await fetch("https://api.exchangerate.host/latest?base=EUR&symbols=INR");
+    const fxData=await fx.json();
+    document.getElementById("eurinr").textContent=fxData.rates.INR.toFixed(2)+" ₹";
 
-  <div class="box">
-    <div class="label">📈 CGI Inc (GIB USD)</div>
-    <div id="gib" class="value">Loading…</div>
-  </div>
-
-  <footer style="margin-top:25px;color:gray;font-size:0.8em;">
-    Euro auto-updates · Others from data.json
-  </footer>
-
-  <script>
-    async function loadData(){
-      try{
-        // Euro-INR (live, CORS-open)
-        const fx = await fetch("https://api.exchangerate.host/latest?base=EUR&symbols=INR");
-        const fxData = await fx.json();
-        document.getElementById("eurinr").textContent =
-          fxData.rates.INR.toFixed(2) + " ₹";
-
-        // Local data.json (static but editable)
-        const local = await fetch("data.json");
-        const d = await local.json();
-        document.getElementById("gold").textContent   = "₹ " + d.gold_inr_10g.toLocaleString();
-        document.getElementById("silver").textContent = "₹ " + d.silver_inr_kg.toLocaleString();
-        document.getElementById("gib").textContent    = "$ " + d.gib_usd.toFixed(2);
-      }catch(e){
-        console.error(e);
-        document.body.insertAdjacentHTML("beforeend",
-          "<p style='color:red'>Error loading data</p>");
-      }
-    }
-    loadData();
-  </script>
+    // your own static JSON (always works on GitHub)
+    const local=await fetch("data.json");
+    const d=await local.json();
+    document.getElementById("gold").textContent  ="₹ "+d.gold_inr_10g.toLocaleString();
+    document.getElementById("silver").textContent="₹ "+d.silver_inr_kg.toLocaleString();
+    document.getElementById("gib").textContent   ="$ "+d.gib_usd.toFixed(2);
+  }catch(e){
+    console.error(e);
+    document.body.insertAdjacentHTML("beforeend",
+      "<p style='color:red'>Error loading data (only Euro rate is live)</p>");
+  }
+}
+loadData();
+</script>
 </body>
 </html>
-
