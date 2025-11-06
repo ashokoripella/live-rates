@@ -24,18 +24,18 @@
 <script>
 async function loadData() {
   try {
-    // --- 1️⃣ Euro → INR from exchangerate-api.com ---
-    const fx = await fetch("https://www.exchangerate-api.com/v6/latest/EUR");
+    // --- 1️⃣ Fetch live Euro→INR safely ---
+    const fx = await fetch("https://open.er-api.com/v6/latest/EUR?nocache=" + Date.now());
     const fxData = await fx.json();
 
     if (!fxData || !fxData.rates || !fxData.rates.INR) {
-      throw new Error("INR rate missing from API response");
+      throw new Error("INR rate missing in API response");
     }
 
     const eurInr = fxData.rates.INR;
     document.getElementById("eurinr").textContent = eurInr.toFixed(2) + " ₹";
 
-    // --- 2️⃣ Local JSON ---
+    // --- 2️⃣ Fetch local JSON (add cache-buster too) ---
     const local = await fetch("./data.json?nocache=" + Date.now());
     if (!local.ok) throw new Error("Failed to load data.json");
     const d = await local.json();
@@ -48,15 +48,13 @@ async function loadData() {
     console.error("Load error:", err);
     document.body.insertAdjacentHTML(
       "beforeend",
-      "<p style='color:red'>Error loading data (check data.json or API)</p>"
+      "<p style='color:red'>Error loading data (check API or data.json)</p>"
     );
   }
 }
 
 loadData();
 </script>
-
-
 
 </body>
 </html>
