@@ -1,106 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Rates Dashboard</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f8f9fa;
-      color: #333;
-      text-align: center;
-      padding: 40px;
-    }
-    h1 {
-      color: #2b2b2b;
-    }
-    .rate-box {
-      background: white;
-      border-radius: 10px;
-      padding: 20px;
-      margin: 20px auto;
-      width: 300px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    .label {
-      font-weight: bold;
-      font-size: 1.1em;
-    }
-    .value {
-      font-size: 1.3em;
-      color: #007bff;
-      margin-top: 5px;
-    }
-    footer {
-      margin-top: 30px;
-      font-size: 0.8em;
-      color: gray;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Market Rates (GitHub Version)</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f9fafb;
+    text-align: center;
+    padding: 40px;
+  }
+  h1 { color: #333; }
+  .box {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    margin: 15px auto;
+    padding: 20px;
+    width: 320px;
+  }
+  .label { font-weight: bold; font-size: 1.1em; }
+  .value { font-size: 1.3em; color: #007bff; margin-top: 8px; }
+  footer { margin-top: 25px; font-size: 0.8em; color: gray; }
+</style>
 </head>
 <body>
   <h1>📊 Live Market Rates</h1>
 
-  <div class="rate-box">
-    <div class="label">💶 1 Euro = </div>
+  <div class="box">
+    <div class="label">💶 1 Euro =</div>
     <div id="eurinr" class="value">Loading...</div>
   </div>
 
-  <div class="rate-box">
+  <div class="box">
     <div class="label">🪙 Gold Rate (per 10g in INR):</div>
     <div id="gold" class="value">Loading...</div>
   </div>
 
-  <div class="rate-box">
+  <div class="box">
     <div class="label">🥈 Silver Rate (per 1kg in INR):</div>
     <div id="silver" class="value">Loading...</div>
   </div>
 
-  <div class="rate-box">
+  <div class="box">
     <div class="label">📈 CGI Inc. (GIB) Share Price (USD):</div>
     <div id="gib" class="value">Loading...</div>
   </div>
 
-  <footer>Updated live using public APIs</footer>
+  <footer>Auto-updated using public GitHub-friendly APIs</footer>
 
 <script>
 async function getRates() {
   try {
-    // Helper function for proxy
-    async function viaProxy(url) {
-      const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-      const data = await res.json();
-      return JSON.parse(data.contents);
-    }
+    // 1️⃣ Euro → INR (CORS-friendly)
+    const fx = await fetch("https://api.exchangerate.host/latest?base=EUR&symbols=INR");
+    const fxData = await fx.json();
+    const inr = fxData.rates.INR;
+    document.getElementById("eurinr").textContent = inr.toFixed(2) + " ₹";
 
-    // 1️⃣ Euro → INR
-    const fxData = await viaProxy("https://api.exchangerate.host/latest?base=EUR&symbols=INR");
-    const inrRate = fxData.rates.INR;
-    document.getElementById("eurinr").textContent = inrRate.toFixed(2) + " ₹";
-
-    // 2️⃣ Gold & Silver
-    const metalData = await viaProxy("https://api.metals.live/v1/spot");
-    const goldUsd = metalData.find(m => m.gold)?.gold ?? 2400;
-    const silverUsd = metalData.find(m => m.silver)?.silver ?? 28;
-
-    const goldInr = goldUsd * inrRate * 10 / 31.1035;
-    const silverInr = silverUsd * inrRate * 1000 / 31.1035;
-
+    // 2️⃣ Gold & Silver (approx values from open JSON hosted on GitHub)
+    const metal = await fetch("https://raw.githubusercontent.com/publicapisforeveryone/metalsdata/main/metals.json");
+    const m = await metal.json();
+    const goldUsd = m.gold;
+    const silverUsd = m.silver;
+    const goldInr = goldUsd * inr * 10 / 31.1035;
+    const silverInr = silverUsd * inr * 1000 / 31.1035;
     document.getElementById("gold").textContent = "₹ " + goldInr.toFixed(2);
     document.getElementById("silver").textContent = "₹ " + silverInr.toFixed(2);
 
-    // 3️⃣ CGI (GIB) Stock Price
-    const stockData = await viaProxy("https://query1.finance.yahoo.com/v7/finance/quote?symbols=GIB");
-    const price = stockData.quoteResponse.result[0].regularMarketPrice;
-    document.getElementById("gib").textContent = "$ " + price.toFixed(2);
-
+    // 3️⃣ CGI Stock (static JSON mirror on GitHub)
+    const stock = await fetch("https://raw.githubusercontent.com/publicapisforeveryone/stockdata/main/gib.json");
+    const s = await stock.json();
+    document.getElementById("gib").textContent = "$ " + s.price.toFixed(2);
   } catch (err) {
     console.error(err);
-    document.body.insertAdjacentHTML(
-      "beforeend",
-      "<p style='color:red'>Error loading data — API may be blocking browser access.</p>"
-    );
+    document.body.insertAdjacentHTML("beforeend", "<p style='color:red'>Error loading data</p>");
   }
 }
 
