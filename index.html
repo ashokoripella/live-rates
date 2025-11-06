@@ -24,37 +24,44 @@
 <script>
 async function loadData() {
   try {
-    // --- 1️⃣ Fetch live Euro→INR safely ---
+    console.log("🔍 Fetching Euro→INR...");
     const fx = await fetch("https://open.er-api.com/v6/latest/EUR?nocache=" + Date.now());
-    const fxData = await fx.json();
+    console.log("FX status:", fx.status);
+    const text = await fx.text();
+    console.log("FX raw:", text.slice(0, 400));
+    const fxData = JSON.parse(text);
+    console.log("FX parsed:", fxData);
 
-    if (!fxData || !fxData.rates || !fxData.rates.INR) {
-      throw new Error("INR rate missing in API response");
+    if (!fxData.rates || !fxData.rates.INR) {
+      throw new Error("INR rate missing from API");
     }
 
     const eurInr = fxData.rates.INR;
     document.getElementById("eurinr").textContent = eurInr.toFixed(2) + " ₹";
 
-    // --- 2️⃣ Fetch local JSON (add cache-buster too) ---
+    console.log("📦 Fetching data.json...");
     const local = await fetch("./data.json?nocache=" + Date.now());
-    if (!local.ok) throw new Error("Failed to load data.json");
-    const d = await local.json();
+    console.log("Local status:", local.status);
+    const localText = await local.text();
+    console.log("Local raw:", localText);
+    const d = JSON.parse(localText);
+    console.log("Local parsed:", d);
 
     document.getElementById("gold").textContent   = "₹ " + d.gold_inr_10g.toLocaleString();
     document.getElementById("silver").textContent = "₹ " + d.silver_inr_kg.toLocaleString();
     document.getElementById("gib").textContent    = "$ " + d.gib_usd.toFixed(2);
-  } 
+  }
   catch (err) {
-    console.error("Load error:", err);
+    console.error("❌ Load error:", err);
     document.body.insertAdjacentHTML(
       "beforeend",
-      "<p style='color:red'>Error loading data (check API or data.json)</p>"
+      "<p style='color:red'>Error loading data (check data.json or API)</p>"
     );
   }
 }
-
 loadData();
 </script>
+
 
 </body>
 </html>
