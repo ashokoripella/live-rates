@@ -25,34 +25,35 @@
 <script>
 async function loadData() {
   try {
-    // --- 1️⃣ Euro-INR rate from live API ---
-    const fxResponse = await fetch("https://api.exchangerate.host/latest?base=EUR&symbols=INR");
-    if (!fxResponse.ok) throw new Error("Failed to fetch Euro rates");
-    const fxData = await fxResponse.json();
-    document.getElementById("eurinr").textContent = fxData.rates.INR.toFixed(2) + " ₹";
+    // --- 1️⃣ Fetch Euro → INR using open.er-api.com ---
+    const fx = await fetch("https://open.er-api.com/v6/latest/EUR");
+    const fxData = await fx.json();
 
-    // --- 2️⃣ Local data.json ---
-    // Cache-busting ensures the latest file is fetched
-    const localResponse = await fetch("./data.json?nocache=" + Date.now());
-    if (!localResponse.ok) throw new Error("Failed to load local data.json");
+    if (!fxData || !fxData.rates || !fxData.rates.INR) {
+      throw new Error("INR rate not found in API response");
+    }
 
-    const data = await localResponse.json();
+    const eurInr = fxData.rates.INR;
+    document.getElementById("eurinr").textContent = eurInr.toFixed(2) + " ₹";
 
-    // Update HTML values
-    document.getElementById("gold").textContent = "₹ " + data.gold_inr_10g.toLocaleString();
-    document.getElementById("silver").textContent = "₹ " + data.silver_inr_kg.toLocaleString();
-    document.getElementById("gib").textContent = "$ " + data.gib_usd.toFixed(2);
+    // --- 2️⃣ Load your local JSON file ---
+    const local = await fetch("./data.json?nocache=" + Date.now());
+    if (!local.ok) throw new Error("Failed to load data.json");
+    const d = await local.json();
 
-  } catch (err) {
-    console.error(err);
+    document.getElementById("gold").textContent   = "₹ " + d.gold_inr_10g.toLocaleString();
+    document.getElementById("silver").textContent = "₹ " + d.silver_inr_kg.toLocaleString();
+    document.getElementById("gib").textContent    = "$ " + d.gib_usd.toFixed(2);
+  }
+  catch (err) {
+    console.error("Load error:", err);
     document.body.insertAdjacentHTML(
       "beforeend",
-      "<p style='color:red'>Error loading data (check data.json and API)</p>"
+      "<p style='color:red'>Error loading data (check API or data.json)</p>"
     );
   }
 }
 
-// Run the loader
 loadData();
 </script>
 
