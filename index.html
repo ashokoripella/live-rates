@@ -23,16 +23,19 @@ async function fetchRates() {
   const proxy = "https://api.allorigins.win/raw?url=";
   const url = encodeURIComponent("https://open.er-api.com/v6/latest/EUR");
 
+  let gold = 0, silver = 0, eurInr = 0;
+
   try {
+    // Try live API first
     const response = await fetch(proxy + url);
     if (!response.ok) throw new Error("Failed to fetch live rates");
 
     const data = await response.json();
-    const eurInr = data.rates?.INR;
+    eurInr = data.rates?.INR;
 
     if (eurInr == null) throw new Error("EUR→INR not found in API");
 
-    document.getElementById("eurinr").textContent = "₹ " + eurInr.toLocaleString();
+    // Optionally, update gold and silver if API provides them (if not, use local)
     console.log("✅ Live EUR→INR fetched:", eurInr);
 
   } catch (error) {
@@ -43,14 +46,10 @@ async function fetchRates() {
       if (!localResponse.ok) throw new Error("data.json not found");
 
       const localData = await localResponse.json();
-      document.getElementById("gold").textContent =
-        localData.gold_inr_10g != null ? "₹ " + Number(localData.gold_inr_10g).toLocaleString() : "N/A";
 
-      document.getElementById("silver").textContent =
-        localData.silver_inr_kg != null ? "₹ " + Number(localData.silver_inr_kg).toLocaleString() : "N/A";
-
-      document.getElementById("eurinr").textContent =
-        localData.eur_inr != null ? "₹ " + Number(localData.eur_inr).toLocaleString() : "N/A";
+      gold = localData.gold_inr_10g ?? 0;
+      silver = localData.silver_inr_kg ?? 0;
+      eurInr = localData.eur_inr ?? 0;
 
     } catch (localError) {
       console.error("❌ Error loading local data.json", localError);
@@ -58,14 +57,25 @@ async function fetchRates() {
         "beforeend",
         "<p class='error'>Error loading data.json</p>"
       );
+      return; // stop further execution
     }
   }
+
+  // Update UI safely
+  document.getElementById("gold").textContent =
+    gold ? "₹ " + Number(gold).toLocaleString() : "N/A";
+
+  document.getElementById("silver").textContent =
+    silver ? "₹ " + Number(silver).toLocaleString() : "N/A";
+
+  document.getElementById("eurinr").textContent =
+    eurInr ? "₹ " + Number(eurInr).toLocaleString() : "N/A";
 }
 
 // Initial load
 fetchRates();
 
-// Auto-update every 5 minutes (300,000 ms)
+// Auto-update every 5 minutes
 setInterval(fetchRates, 300000);
 </script>
 </body>
