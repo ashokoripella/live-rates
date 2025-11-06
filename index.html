@@ -23,36 +23,39 @@
 <footer>Euro auto-updates · others from data.json</footer>
 
 <script>
-async function loadData(){
-  try{
-    // Euro-INR — live and CORS-open
-    const fx = await fetch("https://api.exchangerate.host/latest?base=EUR&symbols=INR");
-    const fxData = await fx.json();
-    document.getElementById("eurinr").textContent =
-      fxData.rates.INR.toFixed(2) + " ₹";
+async function loadData() {
+  try {
+    // --- 1️⃣ Euro-INR rate from live API ---
+    const fxResponse = await fetch("https://api.exchangerate.host/latest?base=EUR&symbols=INR");
+    if (!fxResponse.ok) throw new Error("Failed to fetch Euro rates");
+    const fxData = await fxResponse.json();
+    document.getElementById("eurinr").textContent = fxData.rates.INR.toFixed(2) + " ₹";
 
-    // Static local JSON — must be in the same repo
-    const local = await fetch("https://raw.githubusercontent.com/ashokoripella/live-rates/main/data.json");
-   const local = await fetch("./data.json");
-const d = await local.json();
-console.log(d); // should show JSON object
-    if (!local.ok) throw new Error("data.json missing");
-    const d = await local.json();
+    // --- 2️⃣ Local data.json ---
+    // Cache-busting ensures the latest file is fetched
+    const localResponse = await fetch("./data.json?nocache=" + Date.now());
+    if (!localResponse.ok) throw new Error("Failed to load local data.json");
 
-    document.getElementById("gold").textContent   = "₹ " + d.gold_inr_10g.toLocaleString();
-    document.getElementById("silver").textContent = "₹ " + d.silver_inr_kg.toLocaleString();
-    document.getElementById("gib").textContent    = "$ " + d.gib_usd.toFixed(2);
+    const data = await localResponse.json();
 
-  } catch(e) {
-    console.error(e);
+    // Update HTML values
+    document.getElementById("gold").textContent = "₹ " + data.gold_inr_10g.toLocaleString();
+    document.getElementById("silver").textContent = "₹ " + data.silver_inr_kg.toLocaleString();
+    document.getElementById("gib").textContent = "$ " + data.gib_usd.toFixed(2);
+
+  } catch (err) {
+    console.error(err);
     document.body.insertAdjacentHTML(
       "beforeend",
-      "<p style='color:red'>Error loading data (check data.json path)</p>"
+      "<p style='color:red'>Error loading data (check data.json and API)</p>"
     );
   }
 }
+
+// Run the loader
 loadData();
 </script>
+
 
 </body>
 </html>
