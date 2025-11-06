@@ -32,7 +32,7 @@ async function loadData(){
       fxData.rates.INR.toFixed(2) + " ₹";
 
     // Static local JSON — must be in the same repo
-    const local = await fetch(""./data.json"");
+    const local = await fetch("./data.json");
     if (!local.ok) throw new Error("data.json missing");
     const d = await local.json();
 
