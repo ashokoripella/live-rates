@@ -25,24 +25,31 @@
 <script>
 async function loadData(){
   try{
-    // live Euro→INR (open-CORS API)
-    const fx=await fetch("https://api.exchangerate.host/latest?base=EUR&symbols=INR");
-    const fxData=await fx.json();
-    document.getElementById("eurinr").textContent=fxData.rates.INR.toFixed(2)+" ₹";
+    // Euro-INR — live and CORS-open
+    const fx = await fetch("https://api.exchangerate.host/latest?base=EUR&symbols=INR");
+    const fxData = await fx.json();
+    document.getElementById("eurinr").textContent =
+      fxData.rates.INR.toFixed(2) + " ₹";
 
-    // your own static JSON (always works on GitHub)
-    const local=await fetch("data.json");
-    const d=await local.json();
-    document.getElementById("gold").textContent  ="₹ "+d.gold_inr_10g.toLocaleString();
-    document.getElementById("silver").textContent="₹ "+d.silver_inr_kg.toLocaleString();
-    document.getElementById("gib").textContent   ="$ "+d.gib_usd.toFixed(2);
-  }catch(e){
+    // Static local JSON — must be in the same repo
+    const local = await fetch("data.json");
+    if (!local.ok) throw new Error("data.json missing");
+    const d = await local.json();
+
+    document.getElementById("gold").textContent   = "₹ " + d.gold_inr_10g.toLocaleString();
+    document.getElementById("silver").textContent = "₹ " + d.silver_inr_kg.toLocaleString();
+    document.getElementById("gib").textContent    = "$ " + d.gib_usd.toFixed(2);
+
+  } catch(e) {
     console.error(e);
-    document.body.insertAdjacentHTML("beforeend",
-      "<p style='color:red'>Error loading data (only Euro rate is live)</p>");
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      "<p style='color:red'>Error loading data (check data.json path)</p>"
+    );
   }
 }
 loadData();
 </script>
+
 </body>
 </html>
