@@ -21,22 +21,21 @@
 <div class="box"><div class="label">📈 CGI (GIB USD)</div><div id="gib" class="value">…</div></div>
 
 <footer>Euro auto-updates · others from data.json</footer>
-
 <script>
 async function loadData() {
   try {
-    // --- 1️⃣ Fetch Euro → INR using open.er-api.com ---
-    const fx = await fetch("https://open.er-api.com/v6/latest/EUR");
+    // --- 1️⃣ Euro → INR from exchangerate-api.com ---
+    const fx = await fetch("https://www.exchangerate-api.com/v6/latest/EUR");
     const fxData = await fx.json();
 
     if (!fxData || !fxData.rates || !fxData.rates.INR) {
-      throw new Error("INR rate not found in API response");
+      throw new Error("INR rate missing from API response");
     }
 
     const eurInr = fxData.rates.INR;
     document.getElementById("eurinr").textContent = eurInr.toFixed(2) + " ₹";
 
-    // --- 2️⃣ Load your local JSON file ---
+    // --- 2️⃣ Local JSON ---
     const local = await fetch("./data.json?nocache=" + Date.now());
     if (!local.ok) throw new Error("Failed to load data.json");
     const d = await local.json();
@@ -44,18 +43,19 @@ async function loadData() {
     document.getElementById("gold").textContent   = "₹ " + d.gold_inr_10g.toLocaleString();
     document.getElementById("silver").textContent = "₹ " + d.silver_inr_kg.toLocaleString();
     document.getElementById("gib").textContent    = "$ " + d.gib_usd.toFixed(2);
-  }
+  } 
   catch (err) {
     console.error("Load error:", err);
     document.body.insertAdjacentHTML(
       "beforeend",
-      "<p style='color:red'>Error loading data (check API or data.json)</p>"
+      "<p style='color:red'>Error loading data (check data.json or API)</p>"
     );
   }
 }
 
 loadData();
 </script>
+
 
 
 </body>
