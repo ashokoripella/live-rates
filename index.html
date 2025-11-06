@@ -1,50 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Market Rates (GitHub-only)</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Rates</title>
 <style>
- body{font-family:sans-serif;text-align:center;background:#f9fafb;padding:40px;}
- .box{background:#fff;padding:20px;margin:15px auto;width:320px;
-      border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
- .label{font-weight:bold;} .value{color:#007bff;font-size:1.3em;margin-top:6px;}
- footer{margin-top:25px;color:gray;font-size:0.8em;}
+  body { font-family: Arial, sans-serif; padding: 20px; }
+  h1 { color: #333; }
+  .rate { margin: 10px 0; font-size: 1.2em; }
+  .error { color: red; font-weight: bold; }
 </style>
 </head>
 <body>
-<h1>📊 Market Rates</h1>
+<h1>Live Rates</h1>
 
-<div class="box"><div class="label">💶 1 Euro =</div><div id="eurinr" class="value">…</div></div>
-<div class="box"><div class="label">🪙 Gold (10 g INR)</div><div id="gold" class="value">…</div></div>
-<div class="box"><div class="label">🥈 Silver (1 kg INR)</div><div id="silver" class="value">…</div></div>
-<div class="box"><div class="label">📈 CGI (GIB USD)</div><div id="gib" class="value">…</div></div>
-
-<footer>All values loaded from data.json</footer>
+<div class="rate">Gold (10g): <span id="gold">Loading...</span></div>
+<div class="rate">Silver (1kg): <span id="silver">Loading...</span></div>
+<div class="rate">GIB/USD: <span id="gib">Loading...</span></div>
 
 <script>
 async function loadData() {
   try {
-    const res = await fetch("data.json");
-    if (!res.ok) throw new Error("data.json missing");
-    const d = await res.json();
+    const response = await fetch("data.json");
+    if (!response.ok) throw new Error("data.json not found");
+    
+    const data = await response.json();
 
-    document.getElementById("eurinr").textContent = "₹ " + d.eur_inr.toLocaleString();
-    document.getElementById("gold").textContent   = "₹ " + d.gold_inr_10g.toLocaleString();
-    document.getElementById("silver").textContent = "₹ " + d.silver_inr_kg.toLocaleString();
-    document.getElementById("gib").textContent    = "$ " + d.gib_usd.toFixed(2);
+    // Update values safely
+    document.getElementById("gold").textContent =
+      data.gold_inr_10g != null ? "₹ " + Number(data.gold_inr_10g).toLocaleString() : "N/A";
+
+    document.getElementById("silver").textContent =
+      data.silver_inr_kg != null ? "₹ " + Number(data.silver_inr_kg).toLocaleString() : "N/A";
+
+    document.getElementById("gib").textContent =
+      data.gib_usd != null ? "$ " + Number(data.gib_usd).toFixed(2) : "N/A";
 
   } catch (e) {
     console.error("Error loading data.json", e);
     document.body.insertAdjacentHTML(
       "beforeend",
-      "<p style='color:red'>Error loading data (check data.json)</p>"
+      "<p class='error'>Error loading data.json</p>"
     );
   }
 }
 
+// Call loadData on page load
 loadData();
 </script>
-
 </body>
 </html>
