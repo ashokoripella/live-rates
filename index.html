@@ -5,12 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Market Rates (GitHub-only)</title>
 <style>
- body { font-family: sans-serif; text-align: center; background: #f9fafb; padding: 40px; }
- .box { background: #fff; padding: 20px; margin: 15px auto; width: 320px;
-       border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
- .label { font-weight: bold; } 
- .value { color: #007bff; font-size: 1.3em; margin-top: 6px; }
- footer { margin-top: 25px; color: gray; font-size: 0.8em; }
+ body{font-family:sans-serif;text-align:center;background:#f9fafb;padding:40px;}
+ .box{background:#fff;padding:20px;margin:15px auto;width:320px;
+      border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+ .label{font-weight:bold;} .value{color:#007bff;font-size:1.3em;margin-top:6px;}
+ footer{margin-top:25px;color:gray;font-size:0.8em;}
 </style>
 </head>
 <body>
@@ -19,60 +18,27 @@
 <div class="box"><div class="label">💶 1 Euro =</div><div id="eurinr" class="value">…</div></div>
 <div class="box"><div class="label">🪙 Gold (10 g INR)</div><div id="gold" class="value">…</div></div>
 <div class="box"><div class="label">🥈 Silver (1 kg INR)</div><div id="silver" class="value">…</div></div>
-<div class="box"><div class="label">📈 GIB (USD)</div><div id="gib" class="value">…</div></div>
+<div class="box"><div class="label">📈 CGI (GIB USD)</div><div id="gib" class="value">…</div></div>
 
-<footer>Euro auto-updates · others from data.json</footer>
+<footer>All values loaded from data.json</footer>
 
 <script>
 async function loadData() {
-  // Fallback values in case fetch fails
-  let eurInr = "—";
-  let gold = "—";
-  let silver = "—";
-  let gib = "—";
-
   try {
-    // 1️⃣ Load Euro → INR rate from free API
-    try {
-      const fx = await fetch("https://api.exchangerate.host/latest?base=EUR&symbols=INR");
-      const fxData = await fx.json();
-      if (fxData && fxData.rates && fxData.rates.INR) {
-        eurInr = fxData.rates.INR.toFixed(2) + " ₹";
-      }
-    } catch(e) {
-      console.warn("Euro API failed:", e);
-    }
+    const res = await fetch("data.json");
+    if (!res.ok) throw new Error("data.json missing");
+    const d = await res.json();
 
-    // 2️⃣ Load local data.json
-    try {
-      const local = await fetch("data.json"); // must be same folder
-      if (local.ok) {
-        const d = await local.json();
-        gold   = "₹ " + (d.gold_inr_10g ?? 0).toLocaleString();
-        silver = "₹ " + (d.silver_inr_kg ?? 0).toLocaleString();
-        gib    = "$ " + (d.gib_usd ?? 0).toFixed(2);
-      } else {
-        console.warn("data.json fetch failed:", local.status);
-      }
-    } catch(e) {
-      console.warn("data.json parsing failed:", e);
-    }
+    document.getElementById("eurinr").textContent = "₹ " + d.eur_inr.toLocaleString();
+    document.getElementById("gold").textContent   = "₹ " + d.gold_inr_10g.toLocaleString();
+    document.getElementById("silver").textContent = "₹ " + d.silver_inr_kg.toLocaleString();
+    document.getElementById("gib").textContent    = "$ " + d.gib_usd.toFixed(2);
 
-  } catch(e) {
-    console.error("Unexpected error:", e);
-  }
-
-  // Update the DOM
-  document.getElementById("eurinr").textContent = eurInr;
-  document.getElementById("gold").textContent   = gold;
-  document.getElementById("silver").textContent = silver;
-  document.getElementById("gib").textContent    = gib;
-
-  // Show error if both failed
-  if (eurInr === "—" && gold === "—") {
+  } catch (e) {
+    console.error("Error loading data.json", e);
     document.body.insertAdjacentHTML(
       "beforeend",
-      "<p style='color:red'>Error loading data (check data.json or API)</p>"
+      "<p style='color:red'>Error loading data (check data.json)</p>"
     );
   }
 }
