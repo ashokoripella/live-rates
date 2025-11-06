@@ -20,63 +20,41 @@
 
 <script>
 async function fetchRates() {
-  const proxy = "https://api.allorigins.win/raw?url=";
-  const url = encodeURIComponent("https://open.er-api.com/v6/latest/EUR");
-
-  let gold = 0, silver = 0, eurInr = 0;
-
+  const apiUrl = "https://open.er-api.com/v6/latest/EUR";
+  
   try {
-    // Try live API first
-    const response = await fetch(proxy + url);
-    if (!response.ok) throw new Error("Failed to fetch live rates");
-
+    const response = await fetch(apiUrl);
+    if (!response.ok) throw new Error("Failed live fetch");
+    
     const data = await response.json();
-    eurInr = data.rates?.INR;
+    const eurInr = data.rates?.INR;
+    if (!eurInr) throw new Error("EUR→INR not found");
 
-    if (eurInr == null) throw new Error("EUR→INR not found in API");
-
-    // Optionally, update gold and silver if API provides them (if not, use local)
-    console.log("✅ Live EUR→INR fetched:", eurInr);
+    document.getElementById("eurinr").textContent = "₹ " + eurInr.toLocaleString();
+    
+    // Use local data for gold/silver
+    const localData = await fetch("data.json").then(r => r.json());
+    document.getElementById("gold").textContent = "₹ " + Number(localData.gold_inr_10g).toLocaleString();
+    document.getElementById("silver").textContent = "₹ " + Number(localData.silver_inr_kg).toLocaleString();
 
   } catch (error) {
-    console.warn("⚠️ Live fetch failed, using local data.json", error);
+    console.warn("Live fetch failed, using local data.json", error);
 
     try {
-      const localResponse = await fetch("data.json");
-      if (!localResponse.ok) throw new Error("data.json not found");
-
-      const localData = await localResponse.json();
-
-      gold = localData.gold_inr_10g ?? 0;
-      silver = localData.silver_inr_kg ?? 0;
-      eurInr = localData.eur_inr ?? 0;
-
+      const localData = await fetch("data.json").then(r => r.json());
+      document.getElementById("gold").textContent = "₹ " + Number(localData.gold_inr_10g).toLocaleString();
+      document.getElementById("silver").textContent = "₹ " + Number(localData.silver_inr_kg).toLocaleString();
+      document.getElementById("eurinr").textContent = "₹ " + Number(localData.eur_inr).toLocaleString();
     } catch (localError) {
-      console.error("❌ Error loading local data.json", localError);
-      document.body.insertAdjacentHTML(
-        "beforeend",
-        "<p class='error'>Error loading data.json</p>"
-      );
-      return; // stop further execution
+      console.error("Error loading local data.json", localError);
+      document.body.insertAdjacentHTML("beforeend", "<p class='error'>Error loading data.json</p>");
     }
   }
-
-  // Update UI safely
-  document.getElementById("gold").textContent =
-    gold ? "₹ " + Number(gold).toLocaleString() : "N/A";
-
-  document.getElementById("silver").textContent =
-    silver ? "₹ " + Number(silver).toLocaleString() : "N/A";
-
-  document.getElementById("eurinr").textContent =
-    eurInr ? "₹ " + Number(eurInr).toLocaleString() : "N/A";
 }
 
-// Initial load
 fetchRates();
-
-// Auto-update every 5 minutes
-setInterval(fetchRates, 300000);
+setInterval(fetchRates, 300000); // every 5 mins
 </script>
+
 </body>
 </html>
