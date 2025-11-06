@@ -33,6 +33,9 @@ async function loadData(){
 
     // Static local JSON — must be in the same repo
     const local = await fetch("https://raw.githubusercontent.com/ashokoripella/live-rates/main/data.json");
+   const local = await fetch("./data.json");
+const d = await local.json();
+console.log(d); // should show JSON object
     if (!local.ok) throw new Error("data.json missing");
     const d = await local.json();
 
