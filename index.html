@@ -25,7 +25,8 @@
 async function loadData() {
   try {
     console.log("🔍 Fetching Euro→INR...");
-    const fx = await fetch("https://open.er-api.com/v6/latest/EUR?nocache=" + Date.now());
+    const fx = await fetch("https://api.allorigins.win/raw?url=" +
+                        encodeURIComponent("https://www.exchangerate-api.com/v6/latest/EUR"));
     console.log("FX status:", fx.status);
     const text = await fx.text();
     console.log("FX raw:", text.slice(0, 400));
